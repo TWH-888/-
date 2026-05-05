@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能广告改造系统 | 古风沉浸式演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b1218;
+            background-image: radial-gradient(circle at 50% 50%, #1a2735 0%, #0b1218 100%);
+            color: #f0ece3;
+            font-family: "Microsoft YaHei", "宋体", "思源宋体", serif;
+            min-height: 100vh;
+            padding: 60px 20px;
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 50px;
+        }
+
+        .header {
+            text-align: center;
+            width: 100%;
+        }
+
+        .main-title {
+            font-size: 42px;
+            color: #d4b886;
+            letter-spacing: 8px;
+            font-weight: normal;
+            text-shadow: 0 0 20px rgba(212, 184, 134, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .sub-title {
+            font-size: 18px;
+            color: #c0bcb2;
+            letter-spacing: 2px;
+            font-weight: normal;
+        }
+
+        .demo-wrap {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(212, 184, 134, 0.25);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-title {
+            font-size: 22px;
+            color: #d4b886;
+            text-align: center;
+            letter-spacing: 3px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(212, 184, 134, 0.3);
+        }
+
+        .player-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9/16;
+            background: #000;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 2px solid rgba(212, 184, 134, 0.3);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 上传按钮 最高层级 可点击 */
+        .upload-btn {
+            position: absolute;
+            top: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(212, 184, 134, 0.15);
+            border: 1px solid rgba(212, 184, 134, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: rgba(212, 184, 134, 0.5);
+            cursor: pointer;
+            z-index: 9999 !important;
+            transition: 0.3s;
+        }
+        .upload-btn.left { right: 44px; }
+        .upload-btn.right { right: 8px; }
+
+        .upload-btn:hover {
+            background: rgba(212, 184, 134, 0.35);
+            color: #d4b886;
+        }
+
+        input[type="file"] { display: none; }
+
+        .play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: rgba(212, 184, 134, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transition: 0.3s;
+        }
+
+        .play-icon:hover {
+            transform: translate(-50%, -50%) scale(1.08);
+        }
+
+        .play-icon::after {
+            content: "";
+            width: 0;
+            height: 0;
+            border-top: 14px solid transparent;
+            border-bottom: 14px solid transparent;
+            border-left: 20px solid #0b1218;
+            margin-left: 4px;
+        }
+
+        /* 广告弹窗透明不黑屏 */
+        .ad-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            display: none;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* 跳过按钮 可点击 */
+        .skip-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 6px 14px;
+            background: #d4b886;
+            color: #0b1218;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: default;
+            z-index: 9999;
+            pointer-events: auto;
+        }
+
+        .skip-btn.active {
+            cursor: pointer;
+            background: #e6c996;
+        }
+
+        /* 🔥 核心修改：AI标签向下移动，避开跳过按钮 */
+        .ai-tag {
+            position: absolute;
+            top: 55px; /* 从20px改为55px，大幅下移，不重合 */
+            left: 18px;
+            background: rgba(212, 184, 134, 0.2);
+            border: 1px solid rgba(212, 184, 134, 0.4);
+            color: #d4b886;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 13px;
+            z-index: 15;
+            display: none; /* 默认隐藏 */
+        }
+
+        .desc {
+            font-size: 15px;
+            color: #d0cbbf;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 14px;
+            color: #c0bcb2;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="main-title">AI智能广告改造系统</h1>
+            <h2 class="sub-title">古风视频广告 · 沉浸式体验对比演示</h2>
+        </div>
+
+        <div class="demo-wrap">
+            <!-- 左侧 改造前 -->
+            <div class="card">
+                <h3 class="card-title">改造前 · 传统模式</h3>
+                <div class="player-box">
+                    <div class="upload-btn left" id="uploadOldAd">+</div>
+                    <input type="file" id="oldAdVideoFile" accept="video/mp4">
+                    <div class="upload-btn right" id="uploadOldMain">+</div>
+                    <input type="file" id="oldMainVideoFile" accept="video/mp4">
+                    
+                    <video id="oldVideo" poster=""></video>
+                    <div class="play-icon" id="oldPlayBtn"></div>
+                    
+                    <div class="ad-modal" id="oldAdModal">
+                        <button class="skip-btn" id="skipBtn">5</button>
+                    </div>
+                </div>
+                <p class="desc">强制广告前置 | 5秒不可跳过 | 无差别推送</p>
+            </div>
+
+            <!-- 右侧 改造后 -->
+            <div class="card">
+                <h3 class="card-title">改造后 · AI智能模式</h3>
+                <div class="player-box">
+                    <div class="upload-btn left" id="uploadNew">+</div>
+                    <input type="file" id="newVideoFile" accept="video/mp4">
+                    <div class="upload-btn right" id="uploadAiAd">+</div>
+                    <input type="file" id="aiAdVideoFile" accept="video/mp4">
+
+                    <video id="mainVideo" poster=""></video>
+                    <div class="play-icon" id="mainPlayBtn"></div>
+                    
+                    <div class="ai-tag" id="aiTag">AI已识别：动漫爱好者</div>
+                    <div class="ad-modal" id="newAdModal">
+                        <button class="skip-btn" id="newSkipBtn">5</button>
+                    </div>
+                </div>
+                <p class="desc">AI识别观影喜好 | 智能推送兴趣广告</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="copyright">视频内容仅供演示 如侵必改</div>
+
+    <script>
+        let oldTimer = null, newTimer = null;
+        const AD_COUNT_DOWN = 5;
+        let oldCount = AD_COUNT_DOWN;
+        let newCount = AD_COUNT_DOWN;
+
+        // 左侧元素
+        const oldVideo = document.getElementById('oldVideo');
+        const oldPlayBtn = document.getElementById('oldPlayBtn');
+        const oldAdModal = document.getElementById('oldAdModal');
+        const skipBtn = document.getElementById('skipBtn');
+
+        // 右侧元素
+        const mainVideo = document.getElementById('mainVideo');
+        const mainPlayBtn = document.getElementById('mainPlayBtn');
+        const aiTag = document.getElementById('aiTag');
+        const newAdModal = document.getElementById('newAdModal');
+        const newSkipBtn = document.getElementById('newSkipBtn');
+
+        // 上传元素
+        const uploadOldAd = document.getElementById('uploadOldAd');
+        const oldAdVideoFile = document.getElementById('oldAdVideoFile');
+        const uploadOldMain = document.getElementById('uploadOldMain');
+        const oldMainVideoFile = document.getElementById('oldMainVideoFile');
+
+        const uploadNew = document.getElementById('uploadNew');
+        const newVideoFile = document.getElementById('newVideoFile');
+        const uploadAiAd = document.getElementById('uploadAiAd');
+        const aiAdVideoFile = document.getElementById('aiAdVideoFile');
+
+        // 存储键名
+        const STORAGE_KEYS = {
+            oldAd: 'ai_ad_demo_old_ad',
+            oldMain: 'ai_ad_demo_old_main',
+            newVideo: 'ai_ad_demo_new_video',
+            aiAd: 'ai_ad_demo_ai_ad'
+        };
+
+        // 初始化
+        function initVideos() {
+            loadVideo(STORAGE_KEYS.oldAd, oldVideo);
+            loadVideo(STORAGE_KEYS.newVideo, mainVideo);
+
+            // 🔥 视频播放完毕后，恢复播放按钮，可重新点击
+            oldVideo.onended = () => {
+                oldPlayBtn.style.display = 'flex';
+                oldAdModal.style.display = 'none';
+            };
+            mainVideo.onended = () => {
+                mainPlayBtn.style.display = 'flex';
+                newAdModal.style.display = 'none';
+                aiTag.style.display = 'none';
+            };
+        }
+
+        // 加载视频
+        function loadVideo(storageKey, videoElement) {
+            const dataUrl = localStorage.getItem(storageKey);
+            if (dataUrl && videoElement) videoElement.src = dataUrl;
+        }
+
+        // 保存视频（无压缩，直接保存）
+        function saveVideo(file, key, el) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                localStorage.setItem(key, e.target.result);
+                if(el) el.src = e.target.result;
+                alert('✅ 视频上传成功');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 上传处理（无压缩）
+        function upload(file, key, el) {
+            if(!file) return;
+            saveVideo(file, key, el);
+        }
+
+        // 上传按钮绑定
+        uploadOldAd.onclick = () => oldAdVideoFile.click();
+        oldAdVideoFile.onchange = (e) => upload(e.target.files[0], STORAGE_KEYS.oldAd, oldVideo);
+        
+        uploadOldMain.onclick = () => oldMainVideoFile.click();
+        oldMainVideoFile.onchange = (e) => upload(e.target.files[0], STORAGE_KEYS.oldMain, null);
+
+        uploadNew.onclick = () => newVideoFile.click();
+        newVideoFile.onchange = (e) => upload(e.target.files[0], STORAGE_KEYS.newVideo, mainVideo);
+        
+        uploadAiAd.onclick = () => aiAdVideoFile.click();
+        aiAdVideoFile.onchange = (e) => upload(e.target.files[0], STORAGE_KEYS.aiAd, null);
+
+        // 左侧播放逻辑
+        oldPlayBtn.onclick = () => {
+            const ad = localStorage.getItem(STORAGE_KEYS.oldAd);
+            const main = localStorage.getItem(STORAGE_KEYS.oldMain);
+            if(!ad || !main) { alert('请上传广告和正片'); return; }
+
+            clearInterval(oldTimer);
+            oldAdModal.style.display = 'none';
+            skipBtn.textContent = AD_COUNT_DOWN;
+            skipBtn.classList.remove('active');
+            oldCount = AD_COUNT_DOWN;
+
+            oldVideo.src = ad;
+            oldVideo.currentTime = 0;
+            oldVideo.play();
+            oldPlayBtn.style.display = 'none';
+
+            setTimeout(() => {
+                oldAdModal.style.display = 'block';
+                const t = setInterval(() => {
+                    oldCount--;
+                    skipBtn.textContent = oldCount;
+                    if(oldCount <= 0) {
+                        clearInterval(t);
+                        skipBtn.textContent = '跳过广告';
+                        skipBtn.classList.add('active');
+                    }
+                }, 1000);
+            }, 1000);
+        };
+
+        skipBtn.onclick = () => {
+            if(skipBtn.classList.contains('active')){
+                oldAdModal.style.display = 'none';
+                oldVideo.src = localStorage.getItem(STORAGE_KEYS.oldMain);
+                oldVideo.play();
+            }
+        };
+
+        // 右侧播放逻辑（AI标签延迟2秒显示）
+        mainPlayBtn.onclick = () => {
+            const ad = localStorage.getItem(STORAGE_KEYS.aiAd);
+            const main = localStorage.getItem(STORAGE_KEYS.newVideo);
+            if(!ad || !main) { alert('请上传广告和正片'); return; }
+
+            clearInterval(newTimer);
+            newAdModal.style.display = 'none';
+            newSkipBtn.textContent = AD_COUNT_DOWN;
+            newSkipBtn.classList.remove('active');
+            newCount = AD_COUNT_DOWN;
+            aiTag.style.display = 'none'; // 重置隐藏
+
+            mainVideo.src = ad;
+            mainVideo.currentTime = 0;
+            mainVideo.play();
+            mainPlayBtn.style.display = 'none';
+
+            // AI标签延迟2秒显示
+            setTimeout(() => {
+                aiTag.style.display = 'block';
+            }, 2000);
+
+            setTimeout(() => {
+                newAdModal.style.display = 'block';
+                const t = setInterval(() => {
+                    newCount--;
+                    newSkipBtn.textContent = newCount;
+                    if(newCount <= 0) {
+                        clearInterval(t);
+                        newSkipBtn.textContent = '跳过广告';
+                        newSkipBtn.classList.add('active');
+                    }
+                }, 1000);
+            }, 1000);
+        };
+
+        newSkipBtn.onclick = () => {
+            if(newSkipBtn.classList.contains('active')){
+                newAdModal.style.display = 'none';
+                aiTag.style.display = 'none';
+                mainVideo.src = localStorage.getItem(STORAGE_KEYS.newVideo);
+                mainVideo.play();
+            }
+        };
+
+        window.addEventListener('load', initVideos);
+    </script>
+</body>
+</html>
