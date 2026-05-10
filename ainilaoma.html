@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>母亲节快乐 - 3D运镜版（快节奏）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+            /* 开启3D透视环境 */
+            perspective: 1000px;
+            perspective-origin: center center;
+            /* 运镜动画：速度从30s→15s，更快循环 */
+            animation: cameraMove 15s ease-in-out infinite alternate;
+        }
+        /* 3D爱心流+闪烁白点画布（带景深+跟随运镜） */
+        #loveCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            /* 画布跟随镜头3D变换 */
+            transform: rotateX(10deg) translateZ(-50px);
+            transition: transform 0.3s ease; /* 过渡更快 */
+        }
+        /* 3D爱心+文字容器（核心3D效果+跟随运镜） */
+        .blessing {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateZ(100px); /* 向前突出，有立体感 */
+            z-index: 10;
+            text-align: center;
+            line-height: 1.5;
+            /* 3D变换基础 */
+            transform-style: preserve-3d;
+            /* 跟随运镜速度从25s→12s */
+            animation: followCamera 12s ease-in-out infinite alternate;
+        }
+        /* 3D立体爱心（无渐显） */
+        .heart {
+            font-size: 80px;
+            /* 多层阴影打造3D立体效果 */
+            text-shadow: 
+                0 0 10px #ff0080,
+                0 0 20px #ff0080,
+                0 0 40px #ff0080,
+                1px 1px 0 #c00060,
+                2px 2px 0 #a00050,
+                3px 3px 0 #800040;
+            margin-bottom: 20px;
+            /* 爱心跳动速度从1.5s→1s */
+            animation: heartBeat3D 1s infinite alternate;
+            /* 3D文字抗锯齿 */
+            -webkit-font-smoothing: antialiased;
+        }
+        /* 3D立体主文字（原"爱你老妈 明天见"） */
+        .text {
+            color: #ff69b4;
+            font-size: 40px;
+            font-weight: bold;
+            font-family: "Microsoft YaHei", monospace;
+            /* 3D文字阴影（多层渐变） */
+            text-shadow: 
+                0 0 10px #ff1493,
+                0 0 20px #ff1493,
+                0 0 40px #ff1493,
+                1px 1px 0 #d81280,
+                2px 2px 0 #c01070,
+                3px 3px 0 #a80e60;
+            letter-spacing: 3px;
+            /* 3D呼吸动画（带Z轴位移） */
+            animation: breathe3D 1.5s infinite alternate;
+            transform-style: preserve-3d;
+            margin-bottom: 15px; /* 和下方文字拉开间距 */
+        }
+        /* 祝老妈母亲节快乐 文字样式 */
+        .sub-text {
+            color: #ff9ecc;
+            font-size: 36px;
+            font-weight: bold;
+            font-family: "Microsoft YaHei", monospace;
+            /* 匹配风格的3D阴影（稍淡，避免抢焦点） */
+            text-shadow: 
+                0 0 8px #ff6eb4,
+                0 0 16px #ff6eb4,
+                1px 1px 0 #e81c81,
+                2px 2px 0 #d01875;
+            letter-spacing: 2px;
+            /* 独立的呼吸动画，节奏稍慢，更有层次 */
+            animation: subBreathe3D 2s infinite alternate;
+            transform-style: preserve-3d;
+        }
+        /* 底部日期样式 */
+        .date-container {
+            position: fixed;
+            bottom: 50px; /* 距离底部50px */
+            left: 50%;
+            transform: translateX(-50%) translateZ(80px); /* 3D效果，向前突出 */
+            z-index: 10;
+            text-align: center;
+            transform-style: preserve-3d;
+            /* 跟随整体运镜节奏 */
+            animation: dateFloat 12s ease-in-out infinite alternate;
+        }
+        .date-text {
+            color: #ff80ab;
+            font-size: 32px;
+            font-weight: bold;
+            font-family: "Microsoft YaHei", monospace;
+            /* 匹配整体的3D立体阴影 */
+            text-shadow: 
+                0 0 8px #ff4081,
+                0 0 16px #ff4081,
+                1px 1px 0 #d81b60,
+                2px 2px 0 #c2185b;
+            letter-spacing: 2px;
+            /* 轻微的呼吸动画，匹配文字风格 */
+            animation: dateBreathe 2s infinite alternate;
+        }
+        /* 动画定义 */
+        /* 日期浮动动画（匹配运镜） */
+        @keyframes dateFloat {
+            0% {
+                transform: translateX(-50%) translateZ(80px) rotateX(0deg) rotateY(0deg);
+            }
+            50% {
+                transform: translateX(-50%) translateZ(90px) rotateX(1deg) rotateY(-1deg);
+            }
+            100% {
+                transform: translateX(-50%) translateZ(85px) rotateX(-0.5deg) rotateY(0.5deg);
+            }
+        }
+        /* 日期呼吸动画 */
+        @keyframes dateBreathe {
+            from {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+        /* 主镜头运镜：推拉+旋转+位移（15秒循环） */
+        @keyframes cameraMove {
+            0% {
+                perspective-origin: 50% 50%;
+                transform: scale(1) rotateX(0deg) rotateY(0deg) translate(0px, 0px);
+            }
+            25% {
+                perspective-origin: 45% 55%;
+                transform: scale(1.02) rotateX(2deg) rotateY(-1deg) translate(-10px, -5px);
+            }
+            50% {
+                perspective-origin: 55% 45%;
+                transform: scale(1.03) rotateX(-1deg) rotateY(2deg) translate(10px, 5px);
+            }
+            75% {
+                perspective-origin: 48% 52%;
+                transform: scale(1.01) rotateX(1deg) rotateY(-2deg) translate(-5px, 10px);
+            }
+            100% {
+                perspective-origin: 52% 48%;
+                transform: scale(1.04) rotateX(-2deg) rotateY(1deg) translate(5px, -10px);
+            }
+        }
+        /* 文字/爱心跟随镜头轻微晃动（12秒循环） */
+        @keyframes followCamera {
+            0% {
+                transform: translate(-50%, -50%) translateZ(100px) rotateX(0deg) rotateY(0deg);
+            }
+            25% {
+                transform: translate(-50%, -50%) translateZ(110px) rotateX(1deg) rotateY(-1deg);
+            }
+            50% {
+                transform: translate(-50%, -50%) translateZ(120px) rotateX(-1deg) rotateY(1deg);
+            }
+            75% {
+                transform: translate(-50%, -50%) translateZ(115px) rotateX(0.5deg) rotateY(-0.5deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) translateZ(125px) rotateX(-0.5deg) rotateY(0.5deg);
+            }
+        }
+        /* 3D爱心跳动动画（1秒循环） */
+        @keyframes heartBeat3D {
+            from { 
+                transform: scale(1) translateZ(0); 
+                opacity: 0.9; 
+                text-shadow: 
+                    0 0 10px #ff0080,
+                    0 0 20px #ff0080,
+                    0 0 40px #ff0080,
+                    1px 1px 0 #c00060,
+                    2px 2px 0 #a00050,
+                    3px 3px 0 #800040;
+            }
+            to { 
+                transform: scale(1.05) translateZ(10px); 
+                opacity: 1; 
+                text-shadow: 
+                    0 0 15px #ff0080,
+                    0 0 30px #ff0080,
+                    0 0 60px #ff0080,
+                    1px 1px 0 #c00060,
+                    2px 2px 0 #a00050,
+                    3px 3px 0 #800040,
+                    4px 4px 5px rgba(0,0,0,0.3);
+            }
+        }
+        /* 3D文字呼吸动画（1.5秒循环） */
+        @keyframes breathe3D {
+            from { 
+                opacity: 0.8; 
+                transform: scale(1) translateZ(0); 
+            }
+            to { 
+                opacity: 1; 
+                transform: scale(1.03) translateZ(8px); 
+            }
+        }
+        /* 副标题呼吸动画（2秒循环，节奏更缓） */
+        @keyframes subBreathe3D {
+            from { 
+                opacity: 0.75; 
+                transform: scale(1) translateZ(0); 
+            }
+            to { 
+                opacity: 1; 
+                transform: scale(1.02) translateZ(6px); 
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="loveCanvas"></canvas>
+    <div class="blessing">
+        <div class="heart">💓</div>
+        <div class="text" id="text"></div>
+        <div class="sub-text" id="subText"></div>
+    </div>
+    <div class="date-container">
+        <div class="date-text">2026.5.10</div>
+    </div>
+
+    <script>
+        // 3D爱心流+闪烁白点背景
+        const canvas = document.getElementById('loveCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const heartChars = ['❤️', '💖', '💝', '💘']; 
+        const fontSize = 24; 
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = [];
+
+        // 初始化爱心下落位置 + 3D深度值
+        for (let i = 0; i < columns; i++) {
+            drops[i] = {
+                y: Math.random() * canvas.height,
+                z: Math.random() * 50 + 10 
+            };
+        }
+
+        // 白色闪烁小点配置
+        const dots = [];
+        const dotCount = 150; 
+        for (let i = 0; i < dotCount; i++) {
+            dots.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2 + 0.5, 
+                baseOpacity: Math.random() * 0.8 + 0.2,
+                opacity: Math.random() * 0.8 + 0.2, 
+                speed: Math.random() * 0.4 + 0.2,
+                blinkSpeed: Math.random() * 0.04 + 0.02,
+                z: Math.random() * 40 + 5,
+                shakeX: Math.random() * 1,
+                shakeY: Math.random() * 1
+            });
+        }
+
+        function drawLove() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制闪烁白点
+            for (let i = 0; i < dots.length; i++) {
+                const dot = dots[i];
+                dot.opacity = dot.baseOpacity + Math.sin(Date.now() * dot.blinkSpeed) * 0.3;
+                dot.opacity = Math.max(0.1, Math.min(1, dot.opacity));
+                
+                const dotSize = dot.size * (1 - dot.z / 60);
+                const shakeOffsetX = Math.sin(Date.now() * 0.002 + i) * dot.shakeX;
+                const shakeOffsetY = Math.cos(Date.now() * 0.002 + i) * dot.shakeY;
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${dot.opacity})`;
+                ctx.beginPath();
+                ctx.arc(
+                    dot.x + shakeOffsetX, 
+                    dot.y + shakeOffsetY, 
+                    dotSize, 
+                    0, 
+                    Math.PI * 2
+                );
+                ctx.fill();
+
+                dot.y += dot.speed * (1 - dot.z / 60);
+                if (dot.y > canvas.height) {
+                    dot.y = 0;
+                    dot.x = Math.random() * canvas.width;
+                    dot.baseOpacity = Math.random() * 0.8 + 0.2;
+                    dot.z = Math.random() * 40 + 5;
+                }
+            }
+
+            // 绘制下落爱心
+            for (let i = 0; i < drops.length; i++) {
+                const drop = drops[i];
+                const charIndex = Math.floor(Math.random() * heartChars.length);
+                const text = heartChars[charIndex];
+                
+                const charSize = fontSize * (1 - drop.z / 70);
+                const alpha = 1 - drop.z / 70;
+                ctx.fillStyle = `rgba(255, 0, 128, ${alpha})`; 
+                ctx.font = `${charSize}px monospace`;
+
+                ctx.fillText(
+                    text, 
+                    i * fontSize + (Math.sin(Date.now() * 0.001 + i) * 1), 
+                    drop.y
+                );
+
+                drop.y += fontSize * 0.6 * (1 - drop.z / 70);
+                if (drop.y > canvas.height && Math.random() > 0.99) {
+                    drop.y = 0;
+                    drop.z = Math.random() * 50 + 10;
+                }
+            }
+        }
+        setInterval(drawLove, 40);
+
+        // 窗口自适应
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].x = Math.random() * canvas.width;
+                dots[i].y = Math.random() * canvas.height;
+                dots[i].z = Math.random() * 40 + 5;
+            }
+            for (let i = 0; i < drops.length; i++) {
+                drops[i].y = Math.random() * canvas.height;
+                drops[i].z = Math.random() * 50 + 10;
+            }
+        });
+
+        // 文字逐字渐显逻辑
+        const textEl = document.getElementById('text');
+        const subTextEl = document.getElementById('subText');
+        const englishText = "Love you mother";
+        const chineseText = "爱你老妈 明天见！";
+        const subChineseText = "祝老妈母亲节快乐";
+
+        window.onload = function() {
+            // 第一步：渐显英文
+            let currentEnglish = Array(englishText.length).fill('');
+            for (let i = 0; i < englishText.length; i++) {
+                currentEnglish[i] = heartChars[Math.floor(Math.random() * heartChars.length)];
+            }
+            textEl.innerText = currentEnglish.join('');
+
+            let engIndex = 0;
+            const showEnglish = setInterval(() => {
+                if (engIndex < englishText.length) {
+                    currentEnglish[engIndex] = englishText[engIndex];
+                    textEl.innerText = currentEnglish.join('');
+                    engIndex++;
+                } else {
+                    clearInterval(showEnglish);
+                    
+                    // 第二步：渐显主中文
+                    setTimeout(() => {
+                        let currentChinese = Array(chineseText.length).fill('');
+                        for (let i = 0; i < chineseText.length; i++) {
+                            currentChinese[i] = heartChars[Math.floor(Math.random() * heartChars.length)];
+                        }
+                        textEl.innerText = currentChinese.join('');
+
+                        let chnIndex = 0;
+                        const showChinese = setInterval(() => {
+                            if (chnIndex < chineseText.length) {
+                                currentChinese[chnIndex] = chineseText[chnIndex];
+                                textEl.innerText = currentChinese.join('');
+                                chnIndex++;
+                            } else {
+                                clearInterval(showChinese);
+                                
+                                // 第三步：渐显副标题
+                                setTimeout(() => {
+                                    let currentSubChinese = Array(subChineseText.length).fill('');
+                                    for (let i = 0; i < subChineseText.length; i++) {
+                                        currentSubChinese[i] = heartChars[Math.floor(Math.random() * heartChars.length)];
+                                    }
+                                    subTextEl.innerText = currentSubChinese.join('');
+
+                                    let subIndex = 0;
+                                    const showSubChinese = setInterval(() => {
+                                        if (subIndex < subChineseText.length) {
+                                            currentSubChinese[subIndex] = subChineseText[subIndex];
+                                            subTextEl.innerText = currentSubChinese.join('');
+                                            subIndex++;
+                                        } else {
+                                            clearInterval(showSubChinese);
+                                        }
+                                    }, 120);
+                                }, 200);
+                            }
+                        }, 150);
+                    }, 500);
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>
